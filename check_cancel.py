@@ -163,21 +163,23 @@ def run(prev: dict, state: dict) -> None:
         return
 
     slots = parse_slots(cell)
+    excerpt = re.sub(r"\s+", " ", cell).strip()  # HTMLの字下げを詰めて1行にする
     status = "\n".join(f"{s}: {LABEL[v]}" for s, v in slots.items())
     print(status or cell)
     if not state["started"]:
-        push_line("監視を開始しました（11/23）\n" + (status or "枠が読み取れません\n" + cell)
+        push_line("監視を開始しました（11/23）\n" + (status or "枠が読み取れません\n" + excerpt[:500])
                   + "\n\n↑画面の表示と合っているか確認してください")
         state["started"] = True
     elif not slots:
-        warn_once(state, "no_slots", "⚠️ 11/23のマスはあるのに時間枠を読み取れません\n" + cell[:500])
+        warn_once(state, "no_slots", "⚠️ 11/23のマスはあるのに時間枠を読み取れません\n" + excerpt[:500])
     else:
         state["warned"] = []  # 正常に読めたので警告をリセット
 
     opened = newly_open(normalize(prev.get("slots", {})), slots)
     if prev and opened:
         push_line("🎉 11/23 キャンセル空きが出ました！\n" + "\n".join(opened)
-                  + f"\n\n読み取った内容:\n{cell[:300]}\n\n今すぐ予約👇\n{URL}")
+                  + f"\n\n今すぐ予約👇\n{URL}"
+                  + f"\n\n（読み取った内容: {excerpt[:300]}）")
     if slots:  # 読めなかった回で前回の状態を消さない
         state["slots"] = slots
 

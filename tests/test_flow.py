@@ -28,6 +28,9 @@ check("14:00の×が消える", run(page("×","")), lambda g: len(g)==1 and "14:
 check("空きが続く: 再通知なし", run(page("×","")), lambda g: g==[])
 check("また×に戻る", run(page("×","×")), lambda g: g==[])
 check("再び○: 再通知", run(page("×","○")), lambda g: len(g)==1 and "14:00" in g[0])
+check("空き通知: 予約ページのリンクが枠のすぐ後ろにある", (run(page("×","×")), run(page("×","")))[1],
+      lambda g: len(g)==1 and g[0].index("https://reserva.be/d_museum") < g[0].index("読み取った内容")
+      and "  " not in g[0])
 check("区切りが〜でも読める", run(page("","×", sep="〜")), lambda g: len(g)==1 and "10:15-11:45" in g[0])
 fail["on"]=True; run(page("×","×")); 
 check("LINE失敗時", run(page("","×")), lambda g: len(g)==1 and g[0].startswith("EXC"))
