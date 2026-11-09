@@ -8,13 +8,25 @@ URL = "https://reserva.be/d_museum"
 TARGET_DAY = "23"                      # 11月のカレンダー上の日付
 TARGET_DATE = "2026-11-23"
 FULL_MARKS = ("×", "✕", "✖", "満")     # この文字がある枠は満席、ない枠は空きとみなす
-LOADED_MARKS = ("×", "✕", "✖", "満", "○", "◯", "〇", "⚪", "△")  # 空き状況の読み込み完了の目安
 STATE = Path("state.json")
 JST = timezone(timedelta(hours=9))
+DEBUG = os.environ.get("DEBUG") == "true"
 
-# 日付の数字「23」から親要素をたどり、時間枠を含み、かつ他の日付を含まない最小の要素＝その日のマス
+# 日付の数字「23」から親要素をたどり、時間枠を含み、かつ他の日付を含まない最小の要素＝その日のマス。
+# ×や○が画像・アイコンで描かれていても読めるように、画像の代替テキスト（alt）や
+# aria-label・title も文字として並べ、マスの HTML と一緒に返す。
 FIND_CELL_JS = """
 (day) => {
+  const asText = (el) => {
+    const c = el.cloneNode(true);
+    c.querySelectorAll('script,style').forEach(x => x.remove());
+    c.querySelectorAll('img[alt],[aria-label],[title]').forEach(x => {
+      const label = x.getAttribute('alt') || x.getAttribute('aria-label') || x.getAttribute('title');
+      if (label) x.after(document.createTextNode(' ' + label + ' '));
+    });
+    c.querySelectorAll('*').forEach(x => x.append(document.createTextNode(' ')));
+    return c.textContent;
+  };
   const heads = [...document.querySelectorAll('body *')]
     .filter(e => e.children.length === 0 && e.textContent.trim() === day);
   for (const h of heads) {
@@ -23,7 +35,7 @@ FIND_CELL_JS = """
       const t = el.innerText || '';
       if (/\\d{1,2}:\\d{2}/.test(t)) {
         const days = t.split('\\n').map(s => s.trim()).filter(s => /^\\d{1,2}$/.test(s));
-        if (days.length === 1) return t;
+        if (days.length === 1) return {text: asText(el), html: el.outerHTML};
         break;
       }
       el = el.parentElement;
@@ -52,17 +64,18 @@ def fetch() -> tuple[str | None, str]:
         ctx = b.new_context(**p.devices["iPhone 13"], locale="ja-JP")  # スマホ表示に合わせる
         page = ctx.new_page()
         page.goto(URL, wait_until="load", timeout=60000)
-        try:  # 空き状況は後から読み込まれるので、○や×が出るまで待つ（読み込み途中の誤報を防ぐ）
-            page.wait_for_function(
-                "(m) => m.some(k => document.body.innerText.includes(k))",
-                arg=list(LOADED_MARKS), timeout=20000)
+        try:  # 空き状況は後から読み込まれるので、23日のマスに時間枠が出るまで待つ
+            page.wait_for_function(FIND_CELL_JS, arg=TARGET_DAY, timeout=20000)
         except Exception:
-            pass  # 出なくても続行する
-        page.wait_for_timeout(1000)
-        cell = page.evaluate(FIND_CELL_JS, TARGET_DAY)
+            pass  # 出なくても続行し、下の判定で「マスを特定できず」として扱う
+        page.wait_for_timeout(1500)  # 枠の印（×など）の描画待ち
+        found = page.evaluate(FIND_CELL_JS, TARGET_DAY)
         whole = f"URL: {page.url}\n" + page.inner_text("body")
+        if DEBUG:  # 手動実行のときは、印の正体を調べられるようにマスのHTMLと画面を残す
+            print("=== 23日のマスのHTML ===\n", found["html"][:6000] if found else "(見つからず)")
+            page.screenshot(path="screenshot.png", full_page=True)
         b.close()
-    return cell, whole
+    return (found["text"] if found else None), whole
 
 
 def parse_slots(cell: str) -> dict[str, str]:
