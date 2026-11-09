@@ -4,7 +4,7 @@ RESERVA の d_museum（ https://reserva.be/d_museum ）で、11/23 の 10:15 枠
 
 ## 仕組み
 
-- GitHub Actions が10分おきに `check_cancel.py` を実行する。
+- GitHub Actions が5分おき（GitHub の定期実行の最短）に `check_cancel.py` を実行する。
 - スマホ表示でトップページを開き、カレンダーの「23」のマスを探す。
 - 枠ごとに「×」があるかを見て、×が消えた瞬間だけ LINE に通知する。
 - 前回の結果は `state.json` に保存し、Actions のキャッシュで次の実行に引き継ぐ。
