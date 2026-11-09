@@ -1,0 +1,31 @@
+name: watch-reserva
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # 10分おき（実際は数分遅れることがある）
+  workflow_dispatch:
+concurrency:                  # 前の実行が終わるまで次を待たせ、state.json の取り合いを防ぐ
+  group: watch-reserva
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10       # 固まっても次の実行を詰まらせない
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install playwright && playwright install --with-deps chromium
+      - uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: state-${{ github.run_id }}
+          restore-keys: state-
+      - run: python check_cancel.py
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: state.json
+          key: state-${{ github.run_id }}
