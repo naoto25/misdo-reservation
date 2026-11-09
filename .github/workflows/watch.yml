@@ -18,8 +18,8 @@ jobs:
       - uses: actions/cache/restore@v4
         with:
           path: state.json
-          key: state-v2-${{ github.run_id }}
-          restore-keys: state-v2-   # v2: ×の読み取り方を変えたので、以前の状態は使わない
+          key: state-v3-${{ github.run_id }}
+          restore-keys: state-v3-   # v3: ×の読み取り方を変えたので、以前の状態は使わない
       - run: python check_cancel.py
         env:
           LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
@@ -29,7 +29,7 @@ jobs:
         if: always()
         with:
           path: state.json
-          key: state-v2-${{ github.run_id }}
+          key: state-v3-${{ github.run_id }}
       - uses: actions/upload-artifact@v4
         if: always() && github.event_name == 'workflow_dispatch'
         with:

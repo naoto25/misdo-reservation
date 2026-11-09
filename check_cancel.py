@@ -13,13 +13,19 @@ JST = timezone(timedelta(hours=9))
 DEBUG = os.environ.get("DEBUG") == "true"
 
 # 日付の数字「23」から親要素をたどり、時間枠を含み、かつ他の日付を含まない最小の要素＝その日のマス。
-# ×や○が画像・アイコンで描かれていても読めるように、画像の代替テキスト（alt）や
+# ×や○が画像・アイコンで描かれていても読めるように、アイコンのクラス名、画像の代替テキスト（alt）、
 # aria-label・title も文字として並べ、マスの HTML と一緒に返す。
 FIND_CELL_JS = """
 (day) => {
   const asText = (el) => {
     const c = el.cloneNode(true);
     c.querySelectorAll('script,style').forEach(x => x.remove());
+    // RESERVA は×や○をアイコン（<i class="icon-times"> など）で描くので、文字に置き換える
+    const icons = {times: '×', close: '×', cross: '×', circle: '○', triangle: '△'};
+    c.querySelectorAll('[class*="icon-"]').forEach(x => {
+      const m = (x.getAttribute('class') || '').match(/icon-(times|close|cross|circle|triangle)/);
+      if (m) x.after(document.createTextNode(' ' + icons[m[1]] + ' '));
+    });
     c.querySelectorAll('img[alt],[aria-label],[title]').forEach(x => {
       const label = x.getAttribute('alt') || x.getAttribute('aria-label') || x.getAttribute('title');
       if (label) x.after(document.createTextNode(' ' + label + ' '));
