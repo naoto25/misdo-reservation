@@ -7,7 +7,8 @@ import urllib.request
 URL = "https://reserva.be/d_museum"
 TARGET_DAY = "23"                      # 11月のカレンダー上の日付
 TARGET_DATE = "2026-11-23"
-FULL_MARKS = ("×", "✕", "✖", "満")     # この文字がある枠は満席、ない枠は空きとみなす
+# この文字がある枠は空きではないとみなす（満席、キャンセル待ち、受付終了・締切）。どれもない枠は空き
+FULL_MARKS = ("×", "✕", "✖", "満", "待", "終了", "締切")
 STATE = Path("state.json")
 JST = timezone(timedelta(hours=9))
 DEBUG = os.environ.get("DEBUG") == "true"
@@ -26,6 +27,8 @@ FIND_CELL_JS = """
       const m = (x.getAttribute('class') || '').match(/icon-(times|close|cross|circle|triangle)/);
       if (m) x.after(document.createTextNode(' ' + icons[m[1]] + ' '));
     });
+    // キャンセル待ちの印は画像（icon_wait.png）
+    c.querySelectorAll('img[src*="icon_wait"]').forEach(x => x.after(document.createTextNode(' 待 ')));
     c.querySelectorAll('img[alt],[aria-label],[title]').forEach(x => {
       const label = x.getAttribute('alt') || x.getAttribute('aria-label') || x.getAttribute('title');
       if (label) x.after(document.createTextNode(' ' + label + ' '));
