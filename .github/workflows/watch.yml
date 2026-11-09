@@ -1,8 +1,15 @@
 name: watch-reserva
 on:
+  # 主な起動元は外部の cron サービス（cron-job.org）からの workflow_dispatch。
+  # GitHub の定期実行は 2026-11-09 時点でこのリポジトリでは一度も動かなかったが、戻ったときの予備として残す。
   schedule:
-    - cron: "*/5 * * * *"   # 5分おき（GitHubの最短）。実際は数分遅れることがある
+    - cron: "*/5 * * * *"
   workflow_dispatch:
+    inputs:
+      debug:
+        description: "23日のマスのHTMLをログに出し、画面のスクリーンショットを保存する"
+        type: boolean
+        default: false
 concurrency:                  # 前の実行が終わるまで次を待たせ、state.json の取り合いを防ぐ
   group: watch-reserva
   cancel-in-progress: false
@@ -24,14 +31,14 @@ jobs:
         env:
           LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-          DEBUG: ${{ github.event_name == 'workflow_dispatch' }}  # 手動実行のときだけ診断を出す
+          DEBUG: ${{ inputs.debug == true }}  # 手動実行で debug にチェックしたときだけ診断を出す
       - uses: actions/cache/save@v4
         if: always()
         with:
           path: state.json
           key: state-v3-${{ github.run_id }}
       - uses: actions/upload-artifact@v4
-        if: always() && github.event_name == 'workflow_dispatch'
+        if: always() && inputs.debug == true
         with:
           name: screenshot
           path: screenshot.png

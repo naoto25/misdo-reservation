@@ -4,7 +4,7 @@ RESERVA の d_museum（ https://reserva.be/d_museum ）で、11/23 の 10:15 枠
 
 ## 仕組み
 
-- GitHub Actions が5分おき（GitHub の定期実行の最短）に `check_cancel.py` を実行する。
+- 外部の cron サービス（cron-job.org）が5分おきに GitHub API を呼び、ワークフローを起動する。GitHub の定期実行は 2026-11-09 時点でこのリポジトリでは一度も動かなかったため。定期実行の設定も予備として残している。
 - スマホ表示でトップページを開き、カレンダーの「23」のマスを探す。
 - 枠ごとに「×」があるかを見て、×が消えた瞬間だけ LINE に通知する。
 - 前回の結果は `state.json` に保存し、Actions のキャッシュで次の実行に引き継ぐ。
@@ -23,7 +23,23 @@ RESERVA の d_museum（ https://reserva.be/d_museum ）で、11/23 の 10:15 枠
 
 Actions タブで `watch-reserva` を選び、Run workflow で手動実行する。LINE に「監視を開始しました（11/23）」が届き、両方の枠が「×」なら正常。
 
-手動実行のときだけ、23日のマスの HTML をログに出し、画面のスクリーンショットを成果物（screenshot）として保存する。
+手動実行で「debug」にチェックしたときだけ、23日のマスの HTML をログに出し、画面のスクリーンショットを成果物（screenshot）として保存する。
+
+## 外部 cron からの起動
+
+cron-job.org に、5分おきに次のリクエストを送るジョブを登録している。トークンは misdo-reservation の Actions だけに「Read and write」権限を持つ fine-grained personal access token。
+
+```
+POST https://api.github.com/repos/naoto25/misdo-reservation/actions/workflows/watch.yml/dispatches
+Authorization: Bearer <トークン>
+Accept: application/vnd.github+json
+X-GitHub-Api-Version: 2022-11-28
+Content-Type: application/json
+
+{"ref":"main"}
+```
+
+成功すると GitHub は 204 No Content を返す。
 
 テストは次のコマンドで実行できる（LINE には送らない）。2つ目は Playwright のブラウザが必要。
 
