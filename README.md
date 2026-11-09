@@ -1,6 +1,6 @@
 # misdo-reservation
 
-RESERVA の d_museum（https://reserva.be/d_museum） で、11/23 の 10:15 枠・14:00 枠のキャンセルを見張り、空いたら LINE に通知する。
+RESERVA の d_museum（ https://reserva.be/d_museum ）で、11/23 の 10:15 枠・14:00 枠のキャンセルを見張り、空いたら LINE に通知する。
 
 ## 仕組み
 
